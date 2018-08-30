@@ -29,7 +29,6 @@ import android.os.CountDownTimer;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
-import android.support.wear.ambient.AmbientModeSupport;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
@@ -46,7 +45,6 @@ import java.util.concurrent.TimeUnit;
  * note icon (if clicked, it plays an MP3 file that is included in the app).
  */
 public class MainActivity extends FragmentActivity implements
-        AmbientModeSupport.AmbientCallbackProvider,
         UIAnimation.UIStateListener,
         SoundRecorder.OnVoicePlaybackStateChangedListener {
 
@@ -68,13 +66,7 @@ public class MainActivity extends FragmentActivity implements
     private ProgressBar mProgressBar;
     private CountDownTimer mCountDownTimer;
 
-    /**
-     * Ambient mode controller attached to this display. Used by Activity to see if it is in
-     * ambient mode.
-     */
-    private AmbientModeSupport.AmbientController mAmbientController;
-
-    enum AppState {
+     enum AppState {
         READY, PLAYING_VOICE, PLAYING_MUSIC, RECORDING
     }
 
@@ -87,9 +79,6 @@ public class MainActivity extends FragmentActivity implements
         mInnerCircle = findViewById(R.id.inner_circle);
 
         mProgressBar = findViewById(R.id.progress_bar);
-
-        // Enables Ambient mode.
-        mAmbientController = AmbientModeSupport.attach(this);
     }
 
     private void setProgressBar(long progressInMillis) {
@@ -293,73 +282,6 @@ public class MainActivity extends FragmentActivity implements
      * physically present, is only supported in Android M+ on a wear device..
      */
     public final boolean speakerIsSupported() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            PackageManager packageManager = getPackageManager();
-            // The results from AudioManager.getDevices can't be trusted unless the device
-            // advertises FEATURE_AUDIO_OUTPUT.
-            if (!packageManager.hasSystemFeature(PackageManager.FEATURE_AUDIO_OUTPUT)) {
-                return false;
-            }
-            AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-            AudioDeviceInfo[] devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
-            for (AudioDeviceInfo device : devices) {
-                if (device.getType() == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    @Override
-    public AmbientModeSupport.AmbientCallback getAmbientCallback() {
-        return new MyAmbientCallback();
-    }
-
-    private class MyAmbientCallback extends AmbientModeSupport.AmbientCallback {
-        /** Prepares the UI for ambient mode. */
-        @Override
-        public void onEnterAmbient(Bundle ambientDetails) {
-            super.onEnterAmbient(ambientDetails);
-
-            Log.d(TAG, "onEnterAmbient() " + ambientDetails);
-
-            // Changes views to grey scale.
-            Context context = getApplicationContext();
-            Resources resources = context.getResources();
-
-            mOuterCircle.setBackgroundColor(
-                    ContextCompat.getColor(context, R.color.light_grey));
-            mInnerCircle.setBackground(
-                    ContextCompat.getDrawable(context, R.drawable.grey_circle));
-
-            mProgressBar.setProgressTintList(
-                    resources.getColorStateList(R.color.white, context.getTheme()));
-            mProgressBar.setProgressBackgroundTintList(
-                    resources.getColorStateList(R.color.black, context.getTheme()));
-        }
-
-        /** Restores the UI to active (non-ambient) mode. */
-        @Override
-        public void onExitAmbient() {
-            super.onExitAmbient();
-
-            Log.d(TAG, "onExitAmbient()");
-
-            // Changes views to color.
-            Context context = getApplicationContext();
-            Resources resources = context.getResources();
-
-            mOuterCircle.setBackgroundColor(
-                    ContextCompat.getColor(context, R.color.background_color));
-            mInnerCircle.setBackground(
-                    ContextCompat.getDrawable(context, R.drawable.color_circle));
-
-            mProgressBar.setProgressTintList(
-                    resources.getColorStateList(R.color.progressbar_tint, context.getTheme()));
-            mProgressBar.setProgressBackgroundTintList(
-                    resources.getColorStateList(
-                            R.color.progressbar_background_tint, context.getTheme()));
-        }
+        return true;
     }
 }

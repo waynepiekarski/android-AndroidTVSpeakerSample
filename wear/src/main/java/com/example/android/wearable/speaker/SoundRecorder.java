@@ -41,9 +41,9 @@ import java.lang.ref.WeakReference;
 public class SoundRecorder {
 
     private static final String TAG = "SoundRecorder";
-    private static final int RECORDING_RATE = 8000; // can go up to 44K, if needed
-    private static final int CHANNEL_IN = AudioFormat.CHANNEL_IN_MONO;
-    private static final int CHANNELS_OUT = AudioFormat.CHANNEL_OUT_MONO;
+    private static final int RECORDING_RATE = 44100; // can go up to 44K, if needed
+    private static final int CHANNEL_IN = AudioFormat.CHANNEL_IN_STEREO;
+    private static final int CHANNELS_OUT = AudioFormat.CHANNEL_OUT_STEREO;
     private static final int FORMAT = AudioFormat.ENCODING_PCM_16BIT;
     private static int BUFFER_SIZE = AudioRecord
             .getMinBufferSize(RECORDING_RATE, CHANNEL_IN, FORMAT);
