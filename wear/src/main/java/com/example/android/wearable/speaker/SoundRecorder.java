@@ -26,6 +26,7 @@ import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.widget.TextView;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -33,6 +34,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.util.Arrays;
 
 /**
  * A helper class to provide methods to record audio input from the MIC to the internal storage
@@ -58,17 +60,20 @@ public class SoundRecorder {
     private AsyncTask<Void, Void, Void> mRecordingAsyncTask;
     private AsyncTask<Void, Void, Void> mPlayingAsyncTask;
 
+    private static TextView mInfoText = null;
+
     enum State {
         IDLE, RECORDING, PLAYING
     }
 
     public SoundRecorder(Context context, String outputFileName,
-            OnVoicePlaybackStateChangedListener listener) {
+            OnVoicePlaybackStateChangedListener listener, TextView inInfoText) {
         mOutputFileName = outputFileName;
         mListener = listener;
         mAudioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         mHandler = new Handler(Looper.getMainLooper());
         mContext = context;
+        mInfoText = inInfoText;
     }
 
     /**
@@ -166,6 +171,18 @@ public class SoundRecorder {
                         soundRecorder.mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
                         0 /* flags */);
                 soundRecorder.mState = State.PLAYING;
+
+                mAudioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, RECORDING_RATE,
+                        CHANNELS_OUT, FORMAT, mIntSize, AudioTrack.MODE_STREAM);
+                mAudioTrack.setVolume(AudioTrack.getMaxVolume());
+                mAudioTrack.play();
+
+                String audioSource = "Playback device: ";
+                if (mAudioTrack.getRoutedDevice() != null)
+                    audioSource = audioSource + "id=" + mAudioTrack.getRoutedDevice().getId() + " name=[" + mAudioTrack.getRoutedDevice().getProductName() + "] channels=" + Arrays.toString(mAudioTrack.getRoutedDevice().getChannelCounts());
+                else
+                    audioSource = audioSource + "getRoutedDevice() is null";
+                mInfoText.setText(audioSource);
             }
         }
 
@@ -174,13 +191,9 @@ public class SoundRecorder {
             SoundRecorder soundRecorder = mSoundRecorderWeakReference.get();
 
             try {
-                mAudioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, RECORDING_RATE,
-                        CHANNELS_OUT, FORMAT, mIntSize, AudioTrack.MODE_STREAM);
-                byte[] buffer = new byte[mIntSize * 2];
                 FileInputStream in = null;
                 BufferedInputStream bis = null;
-                mAudioTrack.setVolume(AudioTrack.getMaxVolume());
-                mAudioTrack.play();
+                byte[] buffer = new byte[mIntSize * 2];
                 try {
                     in = soundRecorder.mContext.openFileInput(soundRecorder.mOutputFileName);
                     bis = new BufferedInputStream(in);
@@ -248,16 +261,21 @@ public class SoundRecorder {
             if (soundRecorder != null) {
                 soundRecorder.mState = State.RECORDING;
             }
+
+            mAudioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC,
+                    RECORDING_RATE, CHANNEL_IN, FORMAT, BUFFER_SIZE * 3);
+            String audioSource = "Recording source: ";
+            if (mAudioRecord.getRoutedDevice() != null)
+                audioSource = audioSource + "id=" + mAudioRecord.getRoutedDevice().getId() + " name=[" + mAudioRecord.getRoutedDevice().getProductName() + "] channels=" + Arrays.toString(mAudioRecord.getRoutedDevice().getChannelCounts());
+            else
+                audioSource = audioSource + "getRoutedDevice() is null";
+            mInfoText.setText(audioSource);
         }
 
         @Override
         protected Void doInBackground(Void... params) {
 
             SoundRecorder soundRecorder = mSoundRecorderWeakReference.get();
-
-            mAudioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC,
-                    RECORDING_RATE, CHANNEL_IN, FORMAT, BUFFER_SIZE * 3);
-
 
             BufferedOutputStream bufferedOutputStream = null;
 
@@ -268,6 +286,7 @@ public class SoundRecorder {
                                 Context.MODE_PRIVATE));
                 byte[] buffer = new byte[BUFFER_SIZE];
                 mAudioRecord.startRecording();
+
                 while (!isCancelled()) {
                     int read = mAudioRecord.read(buffer, 0, buffer.length);
                     bufferedOutputStream.write(buffer, 0, read);

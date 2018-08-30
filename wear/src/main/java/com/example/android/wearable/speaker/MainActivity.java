@@ -28,8 +28,10 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 
@@ -74,6 +76,7 @@ public class MainActivity extends FragmentActivity implements
     private ProgressBar mProgressBar;
     private CountDownTimer mCountDownTimer;
     private Button mButtonPlay, mButtonMic, mButtonMusic, mButtonStop;
+    private TextView mInfoText;
 
      enum AppState {
         READY, PLAYING_VOICE, PLAYING_MUSIC, RECORDING
@@ -90,6 +93,7 @@ public class MainActivity extends FragmentActivity implements
         mButtonMic   = findViewById(R.id.mic);
         mButtonMusic = findViewById(R.id.music);
         mButtonStop  = findViewById(R.id.stop);
+        mInfoText   = findViewById(R.id.info);
 
         mButtonPlay.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -213,6 +217,8 @@ public class MainActivity extends FragmentActivity implements
             });
         }
         mMediaPlayer.start();
+
+        mInfoText.setText("Playing music: No information");
     }
 
     /**
@@ -265,7 +271,7 @@ public class MainActivity extends FragmentActivity implements
      * Starts the main flow of the application.
      */
     private void start() {
-        mSoundRecorder = new SoundRecorder(this, VOICE_FILE_NAME, this);
+        mSoundRecorder = new SoundRecorder(this, VOICE_FILE_NAME, this, mInfoText);
     }
 
     @Override
