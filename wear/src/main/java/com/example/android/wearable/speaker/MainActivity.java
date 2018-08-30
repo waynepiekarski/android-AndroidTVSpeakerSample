@@ -17,13 +17,8 @@
 package com.example.android.wearable.speaker;
 
 import android.Manifest;
-import android.content.Context;
 import android.content.pm.PackageManager;
-import android.content.res.Resources;
-import android.media.AudioDeviceInfo;
-import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.support.v4.app.ActivityCompat;
@@ -31,12 +26,12 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
-import android.widget.ImageView;
+import android.widget.Button;
 import android.widget.ProgressBar;
-import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import java.util.concurrent.TimeUnit;
+
 
 /**
  * We first get the required permission to use the MIC. If it is granted, then we continue with
@@ -45,8 +40,25 @@ import java.util.concurrent.TimeUnit;
  * note icon (if clicked, it plays an MP3 file that is included in the app).
  */
 public class MainActivity extends FragmentActivity implements
-        UIAnimation.UIStateListener,
         SoundRecorder.OnVoicePlaybackStateChangedListener {
+
+    public enum UIState {
+        MIC_UP(0), SOUND_UP(1), MUSIC_UP(2), HOME(3);
+        private int mState;
+
+        UIState(int state) {
+            mState = state;
+        }
+
+        static UIState getUIState(int state) {
+            for(UIState uiState : values()) {
+                if (uiState.mState == state) {
+                    return uiState;
+                }
+            }
+            return null;
+        }
+    }
 
     private static final String TAG = "MainActivity";
     private static final int PERMISSIONS_REQUEST_CODE = 100;
@@ -56,15 +68,12 @@ public class MainActivity extends FragmentActivity implements
 
     private MediaPlayer mMediaPlayer;
     private AppState mState = AppState.READY;
-    private UIAnimation.UIState mUiState = UIAnimation.UIState.HOME;
+    private UIState mUiState = UIState.HOME;
     private SoundRecorder mSoundRecorder;
 
-    private RelativeLayout mOuterCircle;
-    private View mInnerCircle;
-
-    private UIAnimation mUIAnimation;
     private ProgressBar mProgressBar;
     private CountDownTimer mCountDownTimer;
+    private Button mButtonPlay, mButtonMic, mButtonMusic, mButtonStop;
 
      enum AppState {
         READY, PLAYING_VOICE, PLAYING_MUSIC, RECORDING
@@ -75,22 +84,55 @@ public class MainActivity extends FragmentActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_activity);
 
-        mOuterCircle = findViewById(R.id.outer_circle);
-        mInnerCircle = findViewById(R.id.inner_circle);
-
         mProgressBar = findViewById(R.id.progress_bar);
+
+        mButtonPlay  = findViewById(R.id.play);
+        mButtonMic   = findViewById(R.id.mic);
+        mButtonMusic = findViewById(R.id.music);
+        mButtonStop  = findViewById(R.id.stop);
+
+        mButtonPlay.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onUIStateChanged(UIState.SOUND_UP);
+            }
+        });
+        mButtonMic.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onUIStateChanged(UIState.MIC_UP);
+            }
+        });
+        mButtonMusic.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onUIStateChanged(UIState.MUSIC_UP);
+            }
+        });
+        mButtonStop.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onUIStateChanged(UIState.HOME);
+            }
+        });
     }
 
     private void setProgressBar(long progressInMillis) {
         mProgressBar.setProgress((int) (progressInMillis / MILLIS_IN_SECOND));
     }
 
-    @Override
-    public void onUIStateChanged(UIAnimation.UIState state) {
+    public void onUIStateChanged(UIState state) {
         Log.d(TAG, "UI State is: " + state);
         if (mUiState == state) {
             return;
         }
+
+        // Do not allow multiple playback or recording to happen, always reset to HOME before
+        if ((mState != AppState.READY) && (state != UIState.HOME)) {
+            Log.d(TAG, "Setting to HOME state first");
+            onUIStateChanged(UIState.HOME);
+        }
+
         switch (state) {
             case MUSIC_UP:
                 mState = AppState.PLAYING_MUSIC;
@@ -115,8 +157,7 @@ public class MainActivity extends FragmentActivity implements
                         mProgressBar.setProgress(0);
                         mProgressBar.setVisibility(View.INVISIBLE);
                         mSoundRecorder.stopRecording();
-                        mUIAnimation.transitionToHome();
-                        mUiState = UIAnimation.UIState.HOME;
+                        onUIStateChanged(UIState.HOME);
                         mState = AppState.READY;
                         mCountDownTimer = null;
                     }
@@ -167,7 +208,7 @@ public class MainActivity extends FragmentActivity implements
                 public void onCompletion(MediaPlayer mp) {
                     // we need to transition to the READY/Home state
                     Log.d(TAG, "Music Finished");
-                    mUIAnimation.transitionToHome();
+                    onUIStateChanged(UIState.HOME);
                 }
             });
         }
@@ -225,32 +266,12 @@ public class MainActivity extends FragmentActivity implements
      */
     private void start() {
         mSoundRecorder = new SoundRecorder(this, VOICE_FILE_NAME, this);
-        int[] thumbResources = new int[] {R.id.mic, R.id.play, R.id.music};
-        ImageView[] thumbs = new ImageView[3];
-        for(int i=0; i < 3; i++) {
-            thumbs[i] = findViewById(thumbResources[i]);
-        }
-        View containerView = findViewById(R.id.container);
-        ImageView expandedView = findViewById(R.id.expanded);
-        int animationDuration = getResources().getInteger(android.R.integer.config_shortAnimTime);
-        mUIAnimation = new UIAnimation(containerView, thumbs, expandedView, animationDuration,
-                this);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        if (speakerIsSupported()) {
-            checkPermissions();
-        } else {
-            mOuterCircle.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Toast.makeText(MainActivity.this, R.string.no_speaker_supported,
-                            Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
+        checkPermissions();
     }
 
     @Override
@@ -272,16 +293,6 @@ public class MainActivity extends FragmentActivity implements
 
     @Override
     public void onPlaybackStopped() {
-        mUIAnimation.transitionToHome();
-        mUiState = UIAnimation.UIState.HOME;
-        mState = AppState.READY;
-    }
-
-    /**
-     * Determines if the wear device has a built-in speaker and if it is supported. Speaker, even if
-     * physically present, is only supported in Android M+ on a wear device..
-     */
-    public final boolean speakerIsSupported() {
-        return true;
+        onUIStateChanged(UIState.HOME);
     }
 }

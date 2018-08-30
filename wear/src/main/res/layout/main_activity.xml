@@ -37,34 +37,40 @@
             android:layout_centerInParent="true"
             android:visibility="invisible" />
 
-        <ImageView
+        <Button
+            android:id="@+id/stop"
+            android:focusable="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="40dp"
+            android:text="Stop" />
+
+        <Button
             android:id="@+id/mic"
+            android:focusable="true"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_above="@+id/center"
-            android:layout_centerHorizontal="true"
-            android:layout_marginBottom="13dp"
-            android:src="@drawable/ic_mic_32dp" />
+            android:layout_margin="40dp"
+            android:layout_toRightOf="@+id/stop"
+            android:text="Record" />
 
-        <ImageView
+        <Button
             android:id="@+id/play"
+            android:focusable="true"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/center"
-            android:layout_marginRight="13dp"
-            android:layout_marginTop="12dp"
-            android:layout_toLeftOf="@+id/center"
-            android:src="@drawable/ic_play_arrow_32dp" />
+            android:layout_margin="40dp"
+            android:layout_toRightOf="@+id/mic"
+            android:text="Playback" />
 
-        <ImageView
+        <Button
             android:id="@+id/music"
+            android:focusable="true"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/center"
-            android:layout_marginLeft="13dp"
-            android:layout_marginTop="12dp"
-            android:layout_toRightOf="@+id/center"
-            android:src="@drawable/ic_audiotrack_32dp" />
+            android:layout_margin="40dp"
+            android:layout_toRightOf="@+id/play"
+            android:text="Music" />
 
         <ProgressBar
             android:id="@+id/progress_bar"
@@ -80,10 +86,12 @@
             android:visibility="invisible" />
     </RelativeLayout>
 
-    <ImageView
+    <Button
         android:id="@+id/expanded"
+        android:focusable="true"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_below="@+id/mic"
         android:scaleType="center"
         android:visibility="invisible" />
 </FrameLayout>
